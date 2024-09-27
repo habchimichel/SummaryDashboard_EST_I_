@@ -107,7 +107,7 @@ def create_gauge_sections(filtered_df):
 
     return sections
 
-# Function to create totals section
+# Function to create totals section with gauges
 def create_totals_section(filtered_df):
     skill_totals = {}
     non_skill_totals = {}
@@ -158,12 +158,37 @@ if student_search:
         for gauge in gauges:
             st.plotly_chart(gauge)
 
-    # Create totals section
+    # Create totals section as gauges
     avg_skill_scores, avg_non_skill_scores = create_totals_section(filtered_df)
+    
     st.subheader("Skill Totals")
-    for title, score in avg_skill_scores.items():
-        st.write(f"{title}: {score:.2f}%")
+    cols = st.columns(4)  # Create 4 columns for layout
+    for i, (title, score) in enumerate(avg_skill_scores.items()):
+        with cols[i % 4]:  # Use modulo operator to cycle through columns
+            gauge = go.Figure(go.Indicator(
+                mode='gauge+number',
+                value=score,
+                number={'font': {'size': 20, 'color': 'blue'}},
+                title={'text': wrap_text(title), 'font': {'size': 12}},
+                gauge={
+                    'axis': {'range': [0, 100]},
+                    'bar': {'color': 'blue'}
+                }
+            ))
+            st.plotly_chart(gauge)
 
     st.subheader("Non-Skill Totals")
-    for title, score in avg_non_skill_scores.items():
-        st.write(f"{title}: {score:.2f}%")
+    cols = st.columns(4)  # Create 4 columns for layout
+    for i, (title, score) in enumerate(avg_non_skill_scores.items()):
+        with cols[i % 4]:  # Use modulo operator to cycle through columns
+            gauge = go.Figure(go.Indicator(
+                mode='gauge+number',
+                value=score,
+                number={'font': {'size': 20, 'color': 'blue'}},
+                title={'text': wrap_text(title), 'font': {'size': 12}},
+                gauge={
+                    'axis': {'range': [0, 100]},
+                    'bar': {'color': 'blue'}
+                }
+            ))
+            st.plotly_chart(gauge)
