@@ -183,4 +183,5 @@ def update_gauges(student_search, selected_tests, selected_countries, test_versi
 
 # Run the server
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(host='0.0.0.0', port=int(os.environ.get('PORT', 8050)), debug=True)
+
