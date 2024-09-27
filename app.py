@@ -142,9 +142,6 @@ def create_totals_section(filtered_df):
     return avg_skill_scores, avg_non_skill_scores
 
 # Update and display gauges and totals based on user input
-if student_search:
-    filtered_df = df[df['Username'] == student_search]
-
     if selected_versions:
         filtered_df = filtered_df[filtered_df['Test'].isin(selected_versions)]
 
