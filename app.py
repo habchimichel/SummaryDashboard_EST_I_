@@ -1,187 +1,169 @@
-import dash
-from dash import dcc, html, Input, Output
-import dash_bootstrap_components as dbc
+import streamlit as st
 import pandas as pd
-import plotly.graph_objs as go
-from flask import Flask
-import dash
-from dash import dcc, html, Input, Output, State
-import dash_bootstrap_components as dbc
-import pandas as pd
-import plotly.graph_objs as go
+import plotly.graph_objects as go
 
 # Load data
-data_path = r'Overall_Averages.xlsx'
+data_path = r'C:\Users\mhabchi\Desktop\Summary DASHBOARD\EST I\Overall_Averages.xlsx'
 df = pd.read_excel(data_path)
 
-# Define maximum scores
+# Define maximum scores for the columns
 max_scores = {
-    "EST I total": 1600, "EST I - Literacy": 800, "EST I - Mathematics": 800,
-    "EST I - Essay": 8, "EST II - Biology": 80, "EST II - Physics": 75,
-    "EST II - Chemistry": 85, "EST II - Math 1": 50, "EST II - Math 2": 50,
-    "EST II - Literature": 60, "EST II - World History": 65, "EST II - Economics": 60
+    "EST I total": 1600,
+    "EST I - Literacy": 800,
+    "EST I - Mathematics": 800,
+    "EST I - Essay": 8,
+    "EST II - Biology": 80,
+    "EST II - Physics": 75,
+    "EST II - Chemistry": 85,
+    "EST II - Math 1": 50,
+    "EST II - Math 2": 50,
+    "EST II - Literature": 60,
+    "EST II - World History": 65,
+    "EST II - Economics": 60
 }
 
-# Initialize Dash app
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SPACELAB])
-
 # App layout
-app.layout = dbc.Container([
-    dbc.Row([dbc.Col(html.H1("Student Performance Dashboard", className='text-center mb-4'), width=12)]),
-    dbc.Row([
-        dbc.Col(dbc.Input(id='password-input', type='password', placeholder='Enter Password'), width=6),
-        dbc.Col(dbc.Button('Submit', id='submit-button', n_clicks=0), width=6),
-    ], className='mb-4'),
-    dbc.Row([dbc.Col(html.Div(id='gauges-container', className='d-flex flex-wrap justify-content-center'))]),
-    dbc.Row([dbc.Col(html.Div(id='totals-container', className='text-center mt-5'))])
-], fluid=True, style={'max-width': '1100px', 'margin': '0 auto'})
+st.title("Student Performance Dashboard")
 
-# Initialize a variable to track authentication status
-is_authenticated = False
-
-# Callback to check password
-@app.callback(
-    Output('gauges-container', 'children'),
-    [Input('submit-button', 'n_clicks')],
-    [State('password-input', 'estest')]
+# Dropdowns for user input
+student_search = st.selectbox(
+    'Search for a student by username',
+    options=df['Username'].unique()
 )
-def authenticate(n_clicks, password):
-    global is_authenticated  # Use a global variable to track authentication status
-    if n_clicks > 0:
-        if password == 'your_password':  # Replace 'your_password' with your desired password
-            is_authenticated = True
-            return "Access Granted. You can now see the dashboard."
-        else:
-            return "Access Denied. Incorrect Password."
-    return "Please enter your password to access the dashboard."
 
-# Initialize Flask app
-server = Flask(__name__)
+selected_versions = st.multiselect(
+    'Select Test(s)',
+    options=df['Test'].unique()
+)
 
-# Initialize Dash app
-app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.SPACELAB])
+selected_countries = st.multiselect(
+    'Select country(ies)',
+    options=df['Country'].unique()
+)
 
-# App layout
-app.layout = dbc.Container([
-    dbc.Row([dbc.Col(html.H1("Student Performance Dashboard", className='text-center mb-4'), width=12)]),
-    dbc.Row([
-        dbc.Col(dcc.Dropdown(
-            id='student-search', 
-            options=[{'label': user, 'value': user} for user in df['Username'].unique()],
-            placeholder='Search for a student', className='mb-4'), width=6),
-        dbc.Col(dcc.Dropdown(
-            id='test-dropdown', 
-            options=[{'label': test, 'value': test} for test in df['Test'].unique()],
-            multi=True, placeholder='Select Test(s)', className='mb-4'), width=6),
-        dbc.Col(dcc.Dropdown(
-            id='country-dropdown', 
-            options=[{'label': country, 'value': country} for country in df['Country'].unique()],
-            multi=True, placeholder='Select Country', className='mb-4'), width=6),
-        dbc.Col(dcc.Dropdown(
-            id='test-version-dropdown',
-            options=[{'label': 'Select All Versions', 'value': 'ALL'}] + 
-                    [{'label': ver, 'value': ver} for ver in df['Version'].unique()],
-            placeholder='Select Test Version', multi=True, className='mb-4'), width=6),
-    ], className='mb-4'),
-    dbc.Row([dbc.Col(html.Div(id='gauges-container', className='d-flex flex-wrap justify-content-center'))]),
-    dbc.Row([dbc.Col(html.Div(id='totals-container', className='text-center mt-5'))])
-], fluid=True, style={'max-width': '1100px', 'margin': '0 auto'})
+test_version = st.multiselect(
+    'Select test version(s)',
+    options=['Select All Versions'] + df['Version'].unique().tolist()
+)
 
-# Helper function for wrapping text
+# Function to wrap text at spaces
 def wrap_text(text, max_length=35):
     text = text.replace('A-SK-', '').replace('B-SK-', '').replace('C-SK-', '').replace('D-SK-', '')
-    words, lines, line = text.split(), [], ""
+    text = text.replace('A-', '').replace('B-', '').replace('C-', '').replace('D-', '')
+
+    words = text.split()
+    lines = []
+    line = ""
+
     for word in words:
         if len(line) + len(word) + 1 <= max_length:
-            line += (" " if line else "") + word
+            if line:
+                line += " "
+            line += word
         else:
             lines.append(line)
             line = word
-    if line: lines.append(line)
+
+    if line:
+        lines.append(line)
+
     return '<br>'.join(lines)
 
 # Function to create gauge sections by test
 def create_gauge_sections(filtered_df):
     sections = []
-    for test in filtered_df['Test'].unique():
-        skill_gauges = []
-        for skill in filtered_df[filtered_df['Test'] == test]['Skill/Passage'].unique():
-            row = filtered_df[(filtered_df['Test'] == test) & (filtered_df['Skill/Passage'] == skill)].iloc[0]
-            avg_score, perc_score = row['Average Score'], row['Average Score'] * 100
-            gauge = dcc.Graph(
-                id=f'gauge-{skill}',
-                figure=go.Figure(go.Indicator(
-                    mode='gauge+number', value=perc_score,
-                    title={'text': wrap_text(skill), 'font': {'size': 12}},
-                    gauge={'axis': {'range': [0, 100]}, 'bar': {'color': 'blue'}}
-                )),
-                style={'display': 'inline-block', 'width': '250px', 'height': '250px', 'margin': '10px'}
-            )
-            skill_gauges.append(dbc.Col(gauge, width=3))
+    tests = filtered_df['Test'].unique()
 
-        sections.append(dbc.Row([
-            dbc.Col(html.H3(test, className='text-center my-4'), width=12),
-            dbc.Col(dbc.Row(skill_gauges, className='d-flex justify-content-center'), width=12),
-        ], className='mb-4', style={'border': '1px solid #dee2e6', 'padding': '15px', 'background-color': '#f8f9fa'}))
+    for test in tests:
+        test_df = filtered_df[filtered_df['Test'] == test]
+        gauges = []
+        skills = test_df['Skill/Passage'].unique()
+
+        for skill in skills:
+            skill_row = test_df[test_df['Skill/Passage'] == skill].iloc[0]
+            average_score = skill_row['Average Score']
+            percentage_score = average_score * 100
+
+            bar_color = 'blue'
+            title = wrap_text(skill)
+
+            gauge = go.Figure(go.Indicator(
+                mode='gauge+number',
+                value=percentage_score,
+                number={'font': {'size': 20, 'color': bar_color}},
+                title={
+                    'text': title,
+                    'font': {'size': 12 if len(title.split('<br>')) > 1 else 14}
+                },
+                gauge={
+                    'axis': {'range': [0, 100]},
+                    'bar': {'color': bar_color}
+                }
+            ))
+
+            gauges.append(gauge)
+
+        sections.append((test, gauges))
+
     return sections
 
-# Function to calculate and display total sections
+# Function to create totals section
 def create_totals_section(filtered_df):
-    skill_totals, non_skill_totals = {}, {}
+    skill_totals = {}
+    non_skill_totals = {}
+
     for _, row in filtered_df.iterrows():
-        skill, avg_score, perc_score = row['Skill/Passage'], row['Average Score'], row['Average Score'] * 100
-        clean_title = skill.replace('A-SK-', '').replace('B-SK-', '').replace('C-SK-', '').replace('D-SK-', '')
+        skill_passage = row['Skill/Passage']
+        average_score = row['Average Score']
+        percentage_score = average_score * 100
 
-        # Tally scores
-        target_dict = skill_totals if '-SK-' in skill else non_skill_totals
-        if clean_title in target_dict:
-            target_dict[clean_title]['total_score'] += perc_score
-            target_dict[clean_title]['count'] += 1
+        clean_title = skill_passage.replace('A-SK-', '').replace('B-SK-', '').replace('C-SK-', '').replace('D-SK-', '') \
+                                   .replace('A-', '').replace('B-', '').replace('C-', '').replace('D-', '')
+
+        if '-SK-' in skill_passage:
+            if clean_title in skill_totals:
+                skill_totals[clean_title]['total_score'] += percentage_score
+                skill_totals[clean_title]['count'] += 1
+            else:
+                skill_totals[clean_title] = {'total_score': percentage_score, 'count': 1}
         else:
-            target_dict[clean_title] = {'total_score': perc_score, 'count': 1}
+            if clean_title in non_skill_totals:
+                non_skill_totals[clean_title]['total_score'] += percentage_score
+                non_skill_totals[clean_title]['count'] += 1
+            else:
+                non_skill_totals[clean_title] = {'total_score': percentage_score, 'count': 1}
 
-    # Calculate averages and return sections
     avg_skill_scores = {title: data['total_score'] / data['count'] for title, data in skill_totals.items()}
     avg_non_skill_scores = {title: data['total_score'] / data['count'] for title, data in non_skill_totals.items()}
-    skill_gauges, non_skill_gauges = [], []
-    
-    def generate_gauge(title, avg_score, color='blue'):
-        return dcc.Graph(
-            id=f'gauge-{title}-total',
-            figure=go.Figure(go.Indicator(
-                mode='gauge+number', value=avg_score,
-                title={'text': wrap_text(title), 'font': {'size': 14}},
-                gauge={'axis': {'range': [0, 100]}, 'bar': {'color': color}}
-            )),
-            style={'display': 'inline-block', 'width': '320px', 'height': '320px'}
-        )
 
-    for title, avg_score in avg_skill_scores.items():
-        skill_gauges.append(dbc.Col(generate_gauge(title, avg_score), width=3))
-    for title, avg_score in avg_non_skill_scores.items():
-        non_skill_gauges.append(dbc.Col(generate_gauge(title, avg_score), width=3))
+    return avg_skill_scores, avg_non_skill_scores
 
-    return dbc.Row(skill_gauges + non_skill_gauges, className='d-flex justify-content-center')
+# Update and display gauges and totals based on user input
+if student_search:
+    filtered_df = df[df['Username'] == student_search]
 
-# Callback to update gauges and totals
-@app.callback(
-    [Output('gauges-container', 'children'), Output('totals-container', 'children')],
-    [Input('student-search', 'value'), Input('test-dropdown', 'value'), Input('country-dropdown', 'value'),
-     Input('test-version-dropdown', 'value')]
-)
-def update_gauges(student_search, selected_tests, selected_countries, test_versions):
-    filtered_df = df.copy()
-    if student_search: filtered_df = filtered_df[filtered_df['Username'] == student_search]
-    if selected_tests: filtered_df = filtered_df[filtered_df['Test'].isin(selected_tests)]
-    if selected_countries: filtered_df = filtered_df[filtered_df['Country'].isin(selected_countries)]
-    if test_versions and 'ALL' not in test_versions: filtered_df = filtered_df[filtered_df['Version'].isin(test_versions)]
+    if selected_versions:
+        filtered_df = filtered_df[filtered_df['Test'].isin(selected_versions)]
 
+    if selected_countries:
+        filtered_df = filtered_df[filtered_df['Country'].isin(selected_countries)]
+
+    if test_version and 'Select All Versions' not in test_version:
+        filtered_df = filtered_df[filtered_df['Version'].isin(test_version)]
+
+    # Create gauge sections
     gauge_sections = create_gauge_sections(filtered_df)
-    total_sections = create_totals_section(filtered_df)
+    for test, gauges in gauge_sections:
+        st.subheader(test)
+        for gauge in gauges:
+            st.plotly_chart(gauge)
 
-    return gauge_sections, total_sections
+    # Create totals section
+    avg_skill_scores, avg_non_skill_scores = create_totals_section(filtered_df)
+    st.subheader("Skill Totals")
+    for title, score in avg_skill_scores.items():
+        st.write(f"{title}: {score:.2f}%")
 
-# Run the server
-if __name__ == '__main__':
-    app.run_server(host='0.0.0.0', port=int(os.environ.get('PORT', 8050)), debug=True)
-
+    st.subheader("Non-Skill Totals")
+    for title, score in avg_non_skill_scores.items():
+        st.write(f"{title}: {score:.2f}%")
