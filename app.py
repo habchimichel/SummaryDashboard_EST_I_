@@ -84,7 +84,14 @@ def create_gauge_sections(filtered_df):
             average_score = skill_row['Average Score']
             percentage_score = average_score * 100
 
-            bar_color = 'blue'
+            # Color coding for gauges
+            if percentage_score < 40:
+                bar_color = 'red'
+            elif percentage_score > 80:
+                bar_color = 'green'
+            else:
+                bar_color = 'blue'
+
             title = wrap_text(skill)
 
             gauge = go.Figure(go.Indicator(
@@ -97,7 +104,8 @@ def create_gauge_sections(filtered_df):
                 },
                 gauge={
                     'axis': {'range': [0, 100]},
-                    'bar': {'color': bar_color}
+                    'bar': {'color': bar_color},
+                    'bgcolor': 'lightgray'
                 }
             ))
 
@@ -107,7 +115,7 @@ def create_gauge_sections(filtered_df):
 
     return sections
 
-# Function to create totals section with gauges
+# Function to create totals section as gauges
 def create_totals_section(filtered_df):
     skill_totals = {}
     non_skill_totals = {}
@@ -155,40 +163,72 @@ if student_search:
     gauge_sections = create_gauge_sections(filtered_df)
     for test, gauges in gauge_sections:
         st.subheader(test)
-        for gauge in gauges:
-            st.plotly_chart(gauge)
+        cols = st.columns(4)  # Create 4 columns for the gauges
+        for i, gauge in enumerate(gauges):
+            with cols[i % 4]:  # Display in the corresponding column
+                st.plotly_chart(gauge, use_container_width=True)
 
     # Create totals section as gauges
     avg_skill_scores, avg_non_skill_scores = create_totals_section(filtered_df)
-    
-    st.subheader("Skill Totals")
-    cols = st.columns(4)  # Create 4 columns for layout
-    for i, (title, score) in enumerate(avg_skill_scores.items()):
-        with cols[i % 4]:  # Use modulo operator to cycle through columns
-            gauge = go.Figure(go.Indicator(
-                mode='gauge+number',
-                value=score,
-                number={'font': {'size': 20, 'color': 'blue'}},
-                title={'text': wrap_text(title), 'font': {'size': 12}},
-                gauge={
-                    'axis': {'range': [0, 100]},
-                    'bar': {'color': 'blue'}
-                }
-            ))
-            st.plotly_chart(gauge)
 
+    # Skill Totals
+    st.subheader("Skill Totals")
+    skill_gauges = []
+    for title, score in avg_skill_scores.items():
+        percentage_score = score
+        # Color coding for skill totals
+        if percentage_score < 40:
+            bar_color = 'red'
+        elif percentage_score > 80:
+            bar_color = 'green'
+        else:
+            bar_color = 'blue'
+
+        gauge = go.Figure(go.Indicator(
+            mode='gauge+number',
+            value=percentage_score,
+            number={'font': {'size': 20, 'color': bar_color}},
+            title={'text': wrap_text(title), 'font': {'size': 12}},
+            gauge={
+                'axis': {'range': [0, 100]},
+                'bar': {'color': bar_color},
+                'bgcolor': 'lightgray'
+            }
+        ))
+        skill_gauges.append(gauge)
+
+    cols = st.columns(4)  # Create 4 columns for the skill total gauges
+    for i, gauge in enumerate(skill_gauges):
+        with cols[i % 4]:
+            st.plotly_chart(gauge, use_container_width=True)
+
+    # Non-Skill Totals
     st.subheader("Non-Skill Totals")
-    cols = st.columns(4)  # Create 4 columns for layout
-    for i, (title, score) in enumerate(avg_non_skill_scores.items()):
-        with cols[i % 4]:  # Use modulo operator to cycle through columns
-            gauge = go.Figure(go.Indicator(
-                mode='gauge+number',
-                value=score,
-                number={'font': {'size': 20, 'color': 'blue'}},
-                title={'text': wrap_text(title), 'font': {'size': 12}},
-                gauge={
-                    'axis': {'range': [0, 100]},
-                    'bar': {'color': 'blue'}
-                }
-            ))
-            st.plotly_chart(gauge)
+    non_skill_gauges = []
+    for title, score in avg_non_skill_scores.items():
+        percentage_score = score
+        # Color coding for non-skill totals
+        if percentage_score < 40:
+            bar_color = 'red'
+        elif percentage_score > 80:
+            bar_color = 'green'
+        else:
+            bar_color = 'blue'
+
+        gauge = go.Figure(go.Indicator(
+            mode='gauge+number',
+            value=percentage_score,
+            number={'font': {'size': 20, 'color': bar_color}},
+            title={'text': wrap_text(title), 'font': {'size': 12}},
+            gauge={
+                'axis': {'range': [0, 100]},
+                'bar': {'color': bar_color},
+                'bgcolor': 'lightgray'
+            }
+        ))
+        non_skill_gauges.append(gauge)
+
+    cols = st.columns(4)  # Create 4 columns for the non-skill total gauges
+    for i, gauge in enumerate(non_skill_gauges):
+        with cols[i % 4]:
+            st.plotly_chart(gauge, use_container_width=True)
