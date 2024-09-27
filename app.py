@@ -4,6 +4,11 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.graph_objs as go
 from flask import Flask
+import dash
+from dash import dcc, html, Input, Output, State
+import dash_bootstrap_components as dbc
+import pandas as pd
+import plotly.graph_objs as go
 
 # Load data
 data_path = r'Overall_Averages.xlsx'
@@ -16,6 +21,39 @@ max_scores = {
     "EST II - Chemistry": 85, "EST II - Math 1": 50, "EST II - Math 2": 50,
     "EST II - Literature": 60, "EST II - World History": 65, "EST II - Economics": 60
 }
+
+# Initialize Dash app
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SPACELAB])
+
+# App layout
+app.layout = dbc.Container([
+    dbc.Row([dbc.Col(html.H1("Student Performance Dashboard", className='text-center mb-4'), width=12)]),
+    dbc.Row([
+        dbc.Col(dbc.Input(id='password-input', type='password', placeholder='Enter Password'), width=6),
+        dbc.Col(dbc.Button('Submit', id='submit-button', n_clicks=0), width=6),
+    ], className='mb-4'),
+    dbc.Row([dbc.Col(html.Div(id='gauges-container', className='d-flex flex-wrap justify-content-center'))]),
+    dbc.Row([dbc.Col(html.Div(id='totals-container', className='text-center mt-5'))])
+], fluid=True, style={'max-width': '1100px', 'margin': '0 auto'})
+
+# Initialize a variable to track authentication status
+is_authenticated = False
+
+# Callback to check password
+@app.callback(
+    Output('gauges-container', 'children'),
+    [Input('submit-button', 'n_clicks')],
+    [State('password-input', 'estest')]
+)
+def authenticate(n_clicks, password):
+    global is_authenticated  # Use a global variable to track authentication status
+    if n_clicks > 0:
+        if password == 'your_password':  # Replace 'your_password' with your desired password
+            is_authenticated = True
+            return "Access Granted. You can now see the dashboard."
+        else:
+            return "Access Denied. Incorrect Password."
+    return "Please enter your password to access the dashboard."
 
 # Initialize Flask app
 server = Flask(__name__)
