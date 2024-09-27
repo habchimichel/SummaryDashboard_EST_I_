@@ -25,15 +25,17 @@ max_scores = {
 # App layout
 st.title("Student Performance Dashboard")
 
-
+# Dropdowns for user input
 selected_versions = st.multiselect(
     'Select Test(s)',
-    options=df['Test'].unique()
+    options=df['Test'].unique(),
+    default=df['Test'].unique().tolist()  # Default to all tests
 )
 
 selected_countries = st.multiselect(
     'Select country(ies)',
-    options=df['Country'].unique()
+    options=df['Country'].unique(),
+    default=df['Country'].unique().tolist()  # Default to all countries
 )
 
 test_version = st.multiselect(
@@ -142,85 +144,87 @@ def create_totals_section(filtered_df):
     return avg_skill_scores, avg_non_skill_scores
 
 # Update and display gauges and totals based on user input
-    if selected_versions:
-        filtered_df = filtered_df[filtered_df['Test'].isin(selected_versions)]
+filtered_df = df.copy()
 
-    if selected_countries:
-        filtered_df = filtered_df[filtered_df['Country'].isin(selected_countries)]
+if selected_versions:
+    filtered_df = filtered_df[filtered_df['Test'].isin(selected_versions)]
 
-    if test_version and 'Select All Versions' not in test_version:
-        filtered_df = filtered_df[filtered_df['Version'].isin(test_version)]
+if selected_countries:
+    filtered_df = filtered_df[filtered_df['Country'].isin(selected_countries)]
 
-    # Create gauge sections
-    gauge_sections = create_gauge_sections(filtered_df)
-    for test, gauges in gauge_sections:
-        st.subheader(test)
-        cols = st.columns(4)  # Create 4 columns for the gauges
-        for i, gauge in enumerate(gauges):
-            with cols[i % 4]:  # Display in the corresponding column
-                st.plotly_chart(gauge, use_container_width=True)
+if test_version and 'Select All Versions' not in test_version:
+    filtered_df = filtered_df[filtered_df['Version'].isin(test_version)]
 
-    # Create totals section as gauges
-    avg_skill_scores, avg_non_skill_scores = create_totals_section(filtered_df)
-
-    # Skill Totals
-    st.subheader("Skill Totals")
-    skill_gauges = []
-    for title, score in avg_skill_scores.items():
-        percentage_score = score
-        # Color coding for skill totals
-        if percentage_score < 40:
-            bar_color = 'red'
-        elif percentage_score > 80:
-            bar_color = 'green'
-        else:
-            bar_color = 'blue'
-
-        gauge = go.Figure(go.Indicator(
-            mode='gauge+number',
-            value=percentage_score,
-            number={'font': {'size': 20, 'color': bar_color}},
-            title={'text': wrap_text(title), 'font': {'size': 12}},
-            gauge={
-                'axis': {'range': [0, 100]},
-                'bar': {'color': bar_color},
-                'bgcolor': 'lightgray'
-            }
-        ))
-        skill_gauges.append(gauge)
-
-    cols = st.columns(4)  # Create 4 columns for the skill total gauges
-    for i, gauge in enumerate(skill_gauges):
-        with cols[i % 4]:
+# Create gauge sections
+gauge_sections = create_gauge_sections(filtered_df)
+for test, gauges in gauge_sections:
+    st.subheader(test)
+    cols = st.columns(4)  # Create 4 columns for the gauges
+    for i, gauge in enumerate(gauges):
+        with cols[i % 4]:  # Display in the corresponding column
             st.plotly_chart(gauge, use_container_width=True)
 
-    # Non-Skill Totals
-    st.subheader("Non-Skill Totals")
-    non_skill_gauges = []
-    for title, score in avg_non_skill_scores.items():
-        percentage_score = score
-        # Color coding for non-skill totals
-        if percentage_score < 40:
-            bar_color = 'red'
-        elif percentage_score > 80:
-            bar_color = 'green'
-        else:
-            bar_color = 'blue'
+# Create totals section as gauges
+avg_skill_scores, avg_non_skill_scores = create_totals_section(filtered_df)
 
-        gauge = go.Figure(go.Indicator(
-            mode='gauge+number',
-            value=percentage_score,
-            number={'font': {'size': 20, 'color': bar_color}},
-            title={'text': wrap_text(title), 'font': {'size': 12}},
-            gauge={
-                'axis': {'range': [0, 100]},
-                'bar': {'color': bar_color},
-                'bgcolor': 'lightgray'
-            }
-        ))
-        non_skill_gauges.append(gauge)
+# Skill Totals
+st.subheader("Skill Totals")
+skill_gauges = []
+for title, score in avg_skill_scores.items():
+    percentage_score = score
+    # Color coding for skill totals
+    if percentage_score < 40:
+        bar_color = 'red'
+    elif percentage_score > 80:
+        bar_color = 'green'
+    else:
+        bar_color = 'blue'
 
-    cols = st.columns(4)  # Create 4 columns for the non-skill total gauges
-    for i, gauge in enumerate(non_skill_gauges):
-        with cols[i % 4]:
-            st.plotly_chart(gauge, use_container_width=True)
+    gauge = go.Figure(go.Indicator(
+        mode='gauge+number',
+        value=percentage_score,
+        number={'font': {'size': 20, 'color': bar_color}},
+        title={'text': wrap_text(title), 'font': {'size': 12}},
+        gauge={
+            'axis': {'range': [0, 100]},
+            'bar': {'color': bar_color},
+            'bgcolor': 'lightgray'
+        }
+    ))
+    skill_gauges.append(gauge)
+
+cols = st.columns(4)  # Create 4 columns for the skill total gauges
+for i, gauge in enumerate(skill_gauges):
+    with cols[i % 4]:
+        st.plotly_chart(gauge, use_container_width=True)
+
+# Non-Skill Totals
+st.subheader("Non-Skill Totals")
+non_skill_gauges = []
+for title, score in avg_non_skill_scores.items():
+    percentage_score = score
+    # Color coding for non-skill totals
+    if percentage_score < 40:
+        bar_color = 'red'
+    elif percentage_score > 80:
+        bar_color = 'green'
+    else:
+        bar_color = 'blue'
+
+    gauge = go.Figure(go.Indicator(
+        mode='gauge+number',
+        value=percentage_score,
+        number={'font': {'size': 20, 'color': bar_color}},
+        title={'text': wrap_text(title), 'font': {'size': 12}},
+        gauge={
+            'axis': {'range': [0, 100]},
+            'bar': {'color': bar_color},
+            'bgcolor': 'lightgray'
+        }
+    ))
+    non_skill_gauges.append(gauge)
+
+cols = st.columns(4)  # Create 4 columns for the non-skill total gauges
+for i, gauge in enumerate(non_skill_gauges):
+    with cols[i % 4]:
+        st.plotly_chart(gauge, use_container_width=True)
