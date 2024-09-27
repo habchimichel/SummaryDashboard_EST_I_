@@ -3,6 +3,7 @@ from dash import dcc, html, Input, Output
 import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.graph_objs as go
+from flask import Flask
 
 # Load data
 data_path = r'Overall_Averages.xlsx'
@@ -16,8 +17,11 @@ max_scores = {
     "EST II - Literature": 60, "EST II - World History": 65, "EST II - Economics": 60
 }
 
+# Initialize Flask app
+server = Flask(__name__)
+
 # Initialize Dash app
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SPACELAB])
+app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.SPACELAB])
 
 # App layout
 app.layout = dbc.Container([
@@ -139,5 +143,6 @@ def update_gauges(student_search, selected_tests, selected_countries, test_versi
 
     return gauge_sections, total_sections
 
+# Run the server
 if __name__ == '__main__':
     app.run_server(debug=True)
