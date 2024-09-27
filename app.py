@@ -25,11 +25,6 @@ max_scores = {
 # App layout
 st.title("Student Performance Dashboard")
 
-# Dropdowns for user input
-student_search = st.selectbox(
-    'Search for a student by username',
-    options=df['Username'].unique()
-)
 
 selected_versions = st.multiselect(
     'Select Test(s)',
